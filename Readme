@@ -1,0 +1,38 @@
+# Explainable AI for Fraud Detection
+
+Detect → Explain → Act.
+
+A credit card fraud detection system that flags suspicious transactions
+and explains *why* using SHAP, so analysts can trust and act on each alert.
+
+## Problem
+Fraud is rare (492 of 284,807 transactions in the ULB dataset, 0.17%),
+so accuracy is misleading. Black-box models also give analysts no reason
+to trust a flag.
+
+## Approach
+Transaction data → Preprocessing → ML model → Fraud/Genuine prediction
+→ SHAP explanation → Analyst decision
+
+- Models: Logistic Regression, Random Forest, XGBoost
+- Imbalance-aware evaluation: Precision, Recall, F1, PR-AUC
+- Global SHAP: which features matter overall
+- Local SHAP: why one specific transaction was flagged
+
+## Live demo
+`index.html` is an interactive prototype. Change a transaction and see
+the fraud score, SHAP-style explanation, and analyst actions.
+Note: the demo uses a simplified hand-weighted model for illustration.
+
+## Business impact
+Faster reviews, fewer false alarms, audit-ready decisions, more trust.
+
+## Future scope
+Real-time streaming, federated learning, counterfactual explanations,
+drift monitoring.
+
+## Dataset
+[ULB Credit Card Fraud Detection](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)
+
+## Author
+Tejaswini J R, B.Tech AI & Data Science
