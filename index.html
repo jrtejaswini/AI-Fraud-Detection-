@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Explainable AI for Fraud Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f5f2;--card:#fff;--ink:#14231c;--mute:#5d6f66;--line:#d8dfda;--red:#c2352b;--grn:#1f7a4d;--amb:#b7791f;--acc:#14231c;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1815;--card:#17241f;--ink:#e6efe9;--mute:#93a79c;--line:#28382f;--red:#ef6a5e;--grn:#4cc38a;--amb:#e3ac4a;--acc:#e6efe9}}
+:root[data-theme="dark"]{--bg:#0f1815;--card:#17241f;--ink:#e6efe9;--mute:#93a79c;--line:#28382f;--red:#ef6a5e;--grn:#4cc38a;--amb:#e3ac4a;--acc:#e6efe9}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:920px;margin:0 auto;padding:20px 16px 40px}
+h1{font:800 clamp(26px,6vw,38px)/1.1 Fraunces,Georgia,serif;margin:0 0 6px}
+h2{font:600 18px Fraunces,Georgia,serif;margin:0 0 12px}
+.sub{color:var(--mute);margin:0 0 18px;max-width:60ch}
+.flow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;font-weight:600}
+.flow span{border:1px solid var(--line);background:var(--card);padding:4px 12px;border-radius:99px;font-size:13px}
+.grid{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:760px){.grid{grid-template-columns:5fr 6fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+.presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 12px;border-radius:8px}
+button:hover{border-color:var(--ink)}button:focus-visible,input:focus-visible{outline:2px solid var(--amb);outline-offset:2px}
+.f{margin-bottom:12px}.f label{display:flex;justify-content:space-between;font-weight:500;font-size:14px}
+.f output{color:var(--mute);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.tg{display:flex;gap:16px;flex-wrap:wrap}.tg label{display:flex;gap:6px;align-items:center;font-size:14px}
+.gauge{height:14px;border-radius:99px;background:var(--line);overflow:hidden;margin:8px 0 4px}
+.gauge i{display:block;height:100%;width:0;transition:width .3s,background .3s}
+.prob{font:800 44px/1 Fraunces,Georgia,serif}
+.verdict{display:inline-block;font-weight:600;padding:3px 12px;border-radius:99px;color:#fff;margin-left:8px;font-size:14px;vertical-align:middle}
+.row{display:grid;grid-template-columns:110px 1fr 56px;gap:8px;align-items:center;margin:7px 0;font-size:13px}
+.bar{position:relative;height:16px}.bar:before{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--mute)}
+.bar i{position:absolute;top:0;height:100%;border-radius:3px;transition:all .3s}
+#gl .bar:before{display:none}
+.row b{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
+.note{color:var(--mute);font-size:13px;margin:10px 0 0}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.cf{font-size:14px;margin:6px 0 0;padding-left:18px}
+#log{margin:10px 0 0;padding:0;list-style:none;font-size:13px}
+#log li{border-top:1px solid var(--line);padding:6px 0}
+.g2{display:grid;gap:14px;margin-top:14px}
+@media(min-width:760px){.g2{grid-template-columns:1fr 1fr}}
+</style></head><body><main>
+<h1>Explainable AI for Fraud Detection</h1>
+<p class="sub">Change a transaction and watch the model score it, then explain which factors pushed the score up or down.</p>
+<div class="flow"><span>Detect</span><span>Explain</span><span>Act</span></div>
+<div class="grid">
+<section class="card"><h2>Transaction</h2>
+<div class="presets"><button data-p="normal">Regular purchase</button><button data-p="night">2 AM big spend</button><button data-p="test">Card testing</button></div>
+<div class="f"><label for="amt">Amount <output id="oamt"></output></label><input id="amt" type="range" min="0" max="100" value="40"></div>
+<div class="f"><label for="hr">Hour of day <output id="ohr"></output></label><input id="hr" type="range" min="0" max="23" value="14"></div>
+<div class="f"><label for="dist">Distance from home <output id="odist"></output></label><input id="dist" type="range" min="0" max="1500" step="5" value="3"></div>
+<div class="f"><label for="vel">Transactions in last hour <output id="ovel"></output></label><input id="vel" type="range" min="0" max="10" value="0"></div>
+<div class="tg"><label><input id="nm" type="checkbox"> New merchant</label><label><input id="intl" type="checkbox"> International</label></div>
+</section>
+<section class="card"><h2>Detect</h2>
+<div><span class="prob" id="p">0%</span><span class="verdict" id="v"></span></div>
+<div class="gauge"><i id="g"></i></div>
+<div class="note">Fraud probability. Review from 35%, block from 70%.</div>
+<h2 style="margin-top:18px">Explain</h2>
+<div id="w"></div>
+<div class="note">Red pushes toward fraud, green toward genuine. Each bar is that feature's SHAP value (log-odds) against the average transaction.</div>
+<h2 style="margin-top:18px">Act</h2>
+<div id="cf"></div>
+<div class="acts"><button data-a="Approved">Approve</button><button data-a="Escalated">Escalate</button><button data-a="Card blocked">Block card</button></div>
+<ul id="log"></ul>
+</section></div>
+<div class="g2">
+<section class="card"><h2>Global importance</h2><div id="gl"></div><div class="note">Average size of each feature's impact across sample transactions.</div></section>
+<section class="card"><h2>Why not just accuracy?</h2>
+<p style="margin:0 0 8px">In the ULB dataset only 492 of 284,807 transactions are fraud (0.17%). A model that says "genuine" every time scores 99.83% accuracy and catches zero fraud.</p>
+<p style="margin:0">So we track precision, recall, F1 and PR-AUC. Recall matters most: a missed fraud costs more than a flagged genuine payment.</p></section></div>
+<p class="note">Prototype: a hand-weighted logistic model with exact linear SHAP values, not trained on the ULB data. Swap in your trained XGBoost and shap.TreeExplainer output to use real numbers.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const F=[
+{k:"Amount",mu:7.3,w:.8,x:s=>Math.log(amtV(s))},
+{k:"Night hour",mu:.15,w:2,x:s=>(s.hr<=5||s.hr==23)?1:0},
+{k:"Distance",mu:2.5,w:.7,x:s=>Math.log(1+s.dist)},
+{k:"Velocity",mu:.5,w:.6,x:s=>s.vel},
+{k:"New merchant",mu:.3,w:1.2,x:s=>s.nm?1:0},
+{k:"International",mu:.05,w:1.5,x:s=>s.intl?1:0}];
+const B=-4.5;
+const amtV=s=>Math.round(100*Math.pow(2000,s.amtR/100)*Math.pow(1,0));
+function amtFrom(r){return Math.round(100*Math.pow(2000,r/100)/10)*10}
+function state(){const r=+$("amt").value;return{amtR:r,amt:amtFrom(r),hr:+$("hr").value,dist:+$("dist").value,vel:+$("vel").value,nm:$("nm").checked,intl:$("intl").checked}}
+F[0].x=s=>Math.log(s.amt);
+const sig=z=>1/(1+Math.exp(-z));
+const contrib=s=>F.map(f=>f.w*(f.x(s)-f.mu));
+const score=s=>sig(B+contrib(s).reduce((a,b)=>a+b,0));
+const inr=n=>"₹"+n.toLocaleString("en-IN");
+function verdict(p){return p>=.7?["Block","var(--red)"]:p>=.35?["Review","var(--amb)"]:["Approve","var(--grn)"]}
+function render(){
+const s=state(),c=contrib(s),p=score(s),[vt,col]=verdict(p);
+$("oamt").textContent=inr(s.amt);$("ohr").textContent=String(s.hr).padStart(2,"0")+":00";
+$("odist").textContent=s.dist+" km";$("ovel").textContent=s.vel;
+$("p").textContent=(p*100).toFixed(p<.01?2:1)+"%";
+const v=$("v");v.textContent=vt;v.style.background=col;
+$("g").style.width=Math.max(1,p*100)+"%";$("g").style.background=col;
+const m=Math.max(1.5,...c.map(Math.abs));
+$("w").innerHTML=F.map((f,i)=>({f,c:c[i]})).sort((a,b)=>Math.abs(b.c)-Math.abs(a.c)).map(o=>{
+const wd=Math.abs(o.c)/m*50,pos=o.c>=0;
+return `<div class="row"><span>${o.f.k}</span><div class="bar"><i style="width:${wd}%;left:${pos?50:50-wd}%;background:${pos?"var(--red)":"var(--grn)"}"></i></div><b>${pos?"+":""}${o.c.toFixed(2)}</b></div>`}).join("");
+const top=c.map((v,i)=>({i,v,drop:p-sig(B+c.reduce((a,b)=>a+b,0)-v)})).filter(o=>o.v>.3).sort((a,b)=>b.drop-a.drop).slice(0,2);
+$("cf").innerHTML=top.length?`<p style="margin:0">Flagged mainly for <b>${top.map(o=>F[o.i].k.toLowerCase()).join(" and ")}</b>. If ${top.length>1?"these were":"this was"} normal, the score would drop by about ${Math.round(top.reduce((a,o)=>a+o.drop,0)*100>100?100:top.reduce((a,o)=>a+o.drop,0)*100)} points. Pick a decision:</p>`:`<p style="margin:0">Nothing unusual stands out. Pick a decision:</p>`;
+}
+document.querySelectorAll("input").forEach(e=>e.addEventListener("input",render));
+const P={normal:{amt:33,hr:14,dist:3,vel:0,nm:0,intl:0},night:{amt:87,hr:2,dist:500,vel:2,nm:1,intl:1},test:{amt:8,hr:3,dist:40,vel:8,nm:1,intl:0}};
+document.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{const q=P[b.dataset.p];
+$("amt").value=q.amt;$("hr").value=q.hr;$("dist").value=q.dist;$("vel").value=q.vel;$("nm").checked=!!q.nm;$("intl").checked=!!q.intl;render()});
+document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{const s=state(),p=score(s);
+const top=contrib(s).map((v,i)=>[v,F[i].k]).sort((a,b)=>b[0]-a[0]).slice(0,2).map(x=>x[1]).join(", ");
+const li=document.createElement("li");li.textContent=`${b.dataset.a}: ${inr(s.amt)} at ${String(s.hr).padStart(2,"0")}:00, score ${(p*100).toFixed(1)}%, top factors ${top}`;
+$("log").prepend(li)});
+// global importance from random sample
+(function(){let sum=F.map(()=>0),n=400;
+for(let i=0;i<n;i++){const s={amtR:Math.random()*100,hr:Math.random()*24|0,dist:Math.random()<.8?Math.random()*20:Math.random()*1500,vel:Math.random()<.85?0:Math.random()*8|0,nm:Math.random()<.3,intl:Math.random()<.05};s.amt=amtFrom(s.amtR);
+contrib(s).forEach((v,j)=>sum[j]+=Math.abs(v))}
+const a=sum.map(x=>x/n),m=Math.max(...a);
+$("gl").innerHTML=F.map((f,i)=>({k:f.k,v:a[i]})).sort((x,y)=>y.v-x.v).map(o=>`<div class="row"><span>${o.k}</span><div class="bar" style="height:12px"><i style="left:0;width:${o.v/m*100}%;background:var(--acc)"></i></div><b>${o.v.toFixed(2)}</b></div>`).join("");
+$(".bar")})();
+document.querySelectorAll("#gl .bar").forEach(b=>b.style.setProperty("--x","0"));
+render();
+</script></body></html>
+
